@@ -98,10 +98,7 @@ var infoCmd = &cli.Command{
 			return err
 		}
 
-		nfaults, err := faults.Count()
-		if err != nil {
-			return xerrors.Errorf("counting faults: %w", err)
-		}
+		nfaults := uint64(len(faults))
 
 		fmt.Printf("\tCommitted: %s\n", types.SizeStr(types.BigMul(types.NewInt(secCounts.Sset), types.NewInt(uint64(mi.SectorSize)))))
 		if nfaults == 0 {

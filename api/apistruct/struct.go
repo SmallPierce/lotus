@@ -126,9 +126,9 @@ type FullNodeStruct struct {
 		StateMinerPower                   func(context.Context, address.Address, types.TipSetKey) (*api.MinerPower, error)                                    `perm:"read"`
 		StateMinerInfo                    func(context.Context, address.Address, types.TipSetKey) (miner.MinerInfo, error)                                    `perm:"read"`
 		StateMinerDeadlines               func(context.Context, address.Address, types.TipSetKey) (*miner.Deadlines, error)                                   `perm:"read"`
-		StateMinerFaults                  func(context.Context, address.Address, types.TipSetKey) (*abi.BitField, error)                                      `perm:"read"`
+		StateMinerFaults                  func(context.Context, address.Address, types.TipSetKey) ([]uint64, error)                                           `perm:"read"`
 		StateAllMinerFaults               func(context.Context, abi.ChainEpoch, types.TipSetKey) ([]*api.Fault, error)                                        `perm:"read"`
-		StateMinerRecoveries              func(context.Context, address.Address, types.TipSetKey) (*abi.BitField, error)                                      `perm:"read"`
+		StateMinerRecoveries              func(context.Context, address.Address, types.TipSetKey) ([]uint64, error)                                           `perm:"read"`
 		StateMinerInitialPledgeCollateral func(context.Context, address.Address, abi.SectorNumber, types.TipSetKey) (types.BigInt, error)                     `perm:"read"`
 		StateMinerAvailableBalance        func(context.Context, address.Address, types.TipSetKey) (types.BigInt, error)                                       `perm:"read"`
 		StateSectorPreCommitInfo          func(context.Context, address.Address, abi.SectorNumber, types.TipSetKey) (miner.SectorPreCommitOnChainInfo, error) `perm:"read"`
@@ -553,7 +553,7 @@ func (c *FullNodeStruct) StateMinerDeadlines(ctx context.Context, m address.Addr
 	return c.Internal.StateMinerDeadlines(ctx, m, tsk)
 }
 
-func (c *FullNodeStruct) StateMinerFaults(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*abi.BitField, error) {
+func (c *FullNodeStruct) StateMinerFaults(ctx context.Context, actor address.Address, tsk types.TipSetKey) ([]uint64, error) {
 	return c.Internal.StateMinerFaults(ctx, actor, tsk)
 }
 
@@ -561,7 +561,7 @@ func (c *FullNodeStruct) StateAllMinerFaults(ctx context.Context, cutoff abi.Cha
 	return c.Internal.StateAllMinerFaults(ctx, cutoff, endTsk)
 }
 
-func (c *FullNodeStruct) StateMinerRecoveries(ctx context.Context, actor address.Address, tsk types.TipSetKey) (*abi.BitField, error) {
+func (c *FullNodeStruct) StateMinerRecoveries(ctx context.Context, actor address.Address, tsk types.TipSetKey) ([]uint64, error) {
 	return c.Internal.StateMinerRecoveries(ctx, actor, tsk)
 }
 
