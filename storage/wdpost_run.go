@@ -62,10 +62,20 @@ func (s *WindowPoStScheduler) doPost(ctx context.Context, deadline *miner.Deadli
 	}()
 }
 
-func (s *WindowPoStScheduler) checkRecoveries(ctx context.Context, deadline uint64, ts *types.TipSet) error {
-	faults, err := s.api.StateMinerFaults(ctx, s.actor, ts.Key())
+func (s *WindowPoStScheduler) getFaultsAndRecoveries(ctx context.Context, tsk types.TipSetKey) (*abi.BitField, *abi.BitField, error) {
+	as, err := s.api.StateReadState(ctx, s.actor, tsk)
 	if err != nil {
-		return xerrors.Errorf("getting on-chain faults: %w", err)
+		return nil, nil, xerrors.Errorf("getting miner state: %w", err)
+	}
+
+	mas := as.State.(miner.State)
+	return mas.Faults, mas.Recoveries, nil
+}
+
+func (s *WindowPoStScheduler) checkRecoveries(ctx context.Context, deadline uint64, ts *types.TipSet) error {
+	faults, recov, err := s.getFaultsAndRecoveries(ctx, ts.Key())
+	if err != nil {
+		return xerrors.Errorf("getting miner faults and recoveries: %w", err)
 	}
 
 	fc, err := faults.Count()
@@ -75,11 +85,6 @@ func (s *WindowPoStScheduler) checkRecoveries(ctx context.Context, deadline uint
 
 	if fc == 0 {
 		return nil
-	}
-
-	recov, err := s.api.StateMinerRecoveries(ctx, s.actor, ts.Key())
-	if err != nil {
-		return xerrors.Errorf("getting on-chain recoveries: %w", err)
 	}
 
 	unrecovered, err := bitfield.SubtractBitField(faults, recov)
@@ -201,19 +206,14 @@ func (s *WindowPoStScheduler) checkFaults(ctx context.Context, ssi []abi.SectorN
 
 // the input sectors must match with the miner actor
 func (s *WindowPoStScheduler) getNeedProveSectors(ctx context.Context, deadlineSectors *abi.BitField, ts *types.TipSet) (*abi.BitField, error) {
-	faults, err := s.api.StateMinerFaults(ctx, s.actor, ts.Key())
+	faults, recoveries, err := s.getFaultsAndRecoveries(ctx, ts.Key())
 	if err != nil {
-		return nil, xerrors.Errorf("getting on-chain faults: %w", err)
+		return nil, xerrors.Errorf("getting miner faults and recoveries: %w", err)
 	}
 
 	declaredFaults, err := bitfield.IntersectBitField(deadlineSectors, faults)
 	if err != nil {
 		return nil, xerrors.Errorf("failed to intersect proof sectors with faults: %w", err)
-	}
-
-	recoveries, err := s.api.StateMinerRecoveries(ctx, s.actor, ts.Key())
-	if err != nil {
-		return nil, xerrors.Errorf("getting on-chain recoveries: %w", err)
 	}
 
 	expectedRecoveries, err := bitfield.IntersectBitField(declaredFaults, recoveries)
